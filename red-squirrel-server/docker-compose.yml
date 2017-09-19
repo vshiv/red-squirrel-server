@@ -1,0 +1,10 @@
+web:
+  image: redsquirrel
+  ports:
+    - 8080:8080
+  links:
+    - redis:redis
+redis:
+  image: redis:3
+  ports:
+    - 6379:6379
