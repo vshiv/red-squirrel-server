@@ -1,15 +1,18 @@
 package com.brainplugs.red.squirrel.redsquirrelserver.rest;
 
+import com.brainplugs.red.squirrel.redsquirrelserver.models.ChatMessage;
+import com.brainplugs.red.squirrel.redsquirrelserver.models.RedSquirrelMessage;
 import com.brainplugs.red.squirrel.redsquirrelserver.service.MessagingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("/message")
+@Controller
 public class MessagingController {
 
     private MessagingService messagingService;
@@ -20,8 +23,8 @@ public class MessagingController {
     }
 
 
-    @PostMapping("/users/{alias}/topics/{topic}/")
-    public void message(@PathVariable("alias") String userId, @PathVariable("topic") String topic, @RequestBody String message) {
-        this.messagingService.publish(userId, topic, message);
+    @MessageMapping("/messages")
+    public void message(ChatMessage message) {
+        this.messagingService.publish(message.getUserId(), message.getTopic(), message.getMessage());
     }
 }

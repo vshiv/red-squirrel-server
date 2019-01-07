@@ -9,7 +9,9 @@ import org.springframework.data.redis.core.index.Indexed;
 import org.springframework.data.redis.listener.ChannelTopic;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
 @Getter
@@ -20,7 +22,7 @@ public class Channel extends ChannelTopic{
 	private String id;
     @Indexed
 	private String topic;
-    private List<RedSquirrelMessage> messages;
+    private Set<RedSquirrelMessage> messages;
 
     /**
      * Constructs a new <code>ChannelTopic</code> instance.
@@ -30,6 +32,6 @@ public class Channel extends ChannelTopic{
     public Channel(String topic) {
         super(topic);
         this.topic = topic;
-        this.messages = new ArrayList<>();
+        this.messages = new HashSet<>();
     }
 }

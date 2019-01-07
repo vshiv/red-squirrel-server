@@ -1,5 +1,6 @@
 package com.brainplugs.red.squirrel.redsquirrelserver.rest;
 
+import com.brainplugs.red.squirrel.redsquirrelserver.models.Channel;
 import com.brainplugs.red.squirrel.redsquirrelserver.service.ChannelAdministrationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,7 +26,7 @@ public class ChannelController {
     }
 
     @GetMapping("/topics/{topic}")
-    public String get(@PathVariable("topic") String topic) {
+    public Channel get(@PathVariable("topic") String topic) {
         return administrationService.fetchByTopic(topic);
     }
 

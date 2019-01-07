@@ -16,12 +16,10 @@ import java.util.List;
 public class UserAdministrationService {
 
     private UserRepository userRepository;
-    private ChannelRepository channelRepository;
 
     @Autowired
-    public UserAdministrationService(final UserRepository userRepository, ChannelRepository channelRepository) {
+    public UserAdministrationService(final UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.channelRepository = channelRepository;
     }
 
     /**
@@ -42,8 +40,8 @@ public class UserAdministrationService {
     }
 
     public void delete(final String userName) {
-        final User user = userRepository.findByAlias(userName);
-        user.setActive(false);
+        User user = userRepository.findByAlias(userName);
+        userRepository.delete(user);
     }
 
     public void updateUserDetails(final @NonNull String userName, final @NonNull String newEmail) {

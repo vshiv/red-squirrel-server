@@ -2,6 +2,7 @@ package com.brainplugs.red.squirrel.redsquirrelserver;
 
 import com.brainplugs.red.squirrel.redsquirrelserver.repository.ChannelRepository;
 import com.brainplugs.red.squirrel.redsquirrelserver.repository.UserRepository;
+import com.brainplugs.red.squirrel.redsquirrelserver.service.UserProxyService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @EnableRedisRepositories
@@ -37,14 +42,25 @@ public class RedSquirrelConfig {
     }
 
     @Bean
-    RedisMessageListenerContainer redisContainer(RedisConnectionFactory connectionFactory, ChannelRepository channelRepository, UserRepository userRepository) {
+    RedisMessageListenerContainer redisContainer(RedisConnectionFactory connectionFactory, Map<String, UserProxyService> userProxyServiceMap,
+                                                 SimpMessagingTemplate simpMessagingTemplate,
+                                                 ChannelRepository channelRepository, UserRepository userRepository) {
         final RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         userRepository.findAll().forEach(user -> {
-            MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(user);
-            container.addMessageListener(messageListenerAdapter, user.getChannelTopics());
+            UserProxyService userProxyService = new UserProxyService(user.getAlias(), simpMessagingTemplate, channelRepository, userRepository);
+            userProxyServiceMap.putIfAbsent(user.getId(), userProxyService);
+            user.getChannelTopics().forEach(topic -> {
+                MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(userProxyService);
+                container.addMessageListener(messageListenerAdapter, channelRepository.findByTopic(topic));
+            });
         });
-         return container;
+        return container;
+    }
+
+    @Bean
+    Map<String, UserProxyService> userProxyServiceMap(){
+        return new HashMap<>();
     }
 
 }

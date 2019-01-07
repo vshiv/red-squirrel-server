@@ -4,6 +4,7 @@ import com.brainplugs.red.squirrel.redsquirrelserver.models.RedSquirrelMessage;
 import com.brainplugs.red.squirrel.redsquirrelserver.repository.RSMRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -27,7 +28,7 @@ public class MessagingService {
         rsm.setSenderId(userId);
         rsm.setTimestamp(Instant.now());
         rsm.setTopic(topic);
-        redisTemplate.convertAndSend(topic, rsm);
-        rsmRepository.save(rsm);
+        RedSquirrelMessage entity = rsmRepository.save(rsm);
+        redisTemplate.convertAndSend(topic, entity);
     }
 }

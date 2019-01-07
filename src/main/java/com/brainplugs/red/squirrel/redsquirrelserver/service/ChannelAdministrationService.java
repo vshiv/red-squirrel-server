@@ -6,11 +6,12 @@ import com.brainplugs.red.squirrel.redsquirrelserver.repository.ChannelRepositor
 import com.brainplugs.red.squirrel.redsquirrelserver.repository.UserRepository;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Set;
 
 
@@ -19,12 +20,19 @@ public class ChannelAdministrationService {
     private ChannelRepository channelRepository;
     private UserRepository userRepository;
     private RedisMessageListenerContainer container;
+    private SimpMessagingTemplate simpMessagingTemplate;
+    private Map<String, UserProxyService> userProxyServiceMap;
 
     @Autowired
-    public ChannelAdministrationService(final ChannelRepository repository, final UserRepository userRepository, RedisMessageListenerContainer container) {
+    public ChannelAdministrationService(final ChannelRepository repository,
+                                        final Map<String, UserProxyService> userProxyServiceMap,
+                                        final UserRepository userRepository,
+                                        final RedisMessageListenerContainer container, final SimpMessagingTemplate simpMessagingTemplate) {
         this.channelRepository = repository;
         this.userRepository = userRepository;
         this.container = container;
+        this.userProxyServiceMap = userProxyServiceMap;
+        this.simpMessagingTemplate = simpMessagingTemplate;
     }
 
     /**
@@ -50,9 +58,11 @@ public class ChannelAdministrationService {
         if(user == null)
             return false;
         channelRepository.save(channel);
-        container.addMessageListener(new MessageListenerAdapter(user), channel);
-        Set<ChannelTopic> userTopics = user.getChannelTopics();
-        userTopics.add(channel);
+        final UserProxyService userProxyService = new UserProxyService(user.getAlias(), simpMessagingTemplate, channelRepository, userRepository);
+        userProxyServiceMap.putIfAbsent(user.getId(), userProxyService);
+        container.addMessageListener(new MessageListenerAdapter(userProxyService), channel);
+        Set<String> userTopics = user.getChannelTopics();
+        userTopics.add(topic);
         user.setChannelTopics(userTopics);
         user.getPushNotificationsByChannel().putIfAbsent(topic, enablePushNotification);
         userRepository.save(user);
@@ -77,13 +87,12 @@ public class ChannelAdministrationService {
     public void deleteUser(String topic, String userId) {
         final Channel channel = channelRepository.findByTopic(topic);
         final User user = userRepository.findByAlias(userId);
-        container.removeMessageListener(user, channel);
-        user.getChannelTopics().remove(channel);
+        container.removeMessageListener(userProxyServiceMap.get(user.getId()), channel);
+        user.getChannelTopics().remove(channel.getTopic());
         userRepository.save(user);
     }
 
-    public String fetchByTopic(final String topic) {
-        Channel channel = channelRepository.findByTopic(topic);
-        return channel.getTopic();
+    public Channel fetchByTopic(final String topic) {
+        return channelRepository.findByTopic(topic);
     }
 }
