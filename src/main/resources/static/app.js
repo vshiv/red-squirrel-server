@@ -18,7 +18,7 @@ function connect() {
     stompClient.connect({}, function (frame) {
         setConnected(true);
         console.log('Connected: ' + frame);
-        stompClient.subscribe('/Games', function (rsm) {
+        stompClient.subscribe('/Chat', function (rsm) {
             showMessage(JSON.parse(rsm.body).message);
         });
     });
@@ -33,7 +33,7 @@ function disconnect() {
 }
 
 function sendName() {
-    stompClient.send("/app/messages", {}, JSON.stringify({'userId': $("#name").val(), 'topic': 'Games', 'message': $("#message").val()}));
+    stompClient.send("/app/messages", {}, JSON.stringify({'userId': $("#name").val(), 'topic': 'Chat', 'message': $("#message").val()}));
 }
 
 function showMessage(message) {
